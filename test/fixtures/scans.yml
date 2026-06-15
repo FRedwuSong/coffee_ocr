@@ -1,0 +1,9 @@
+one:
+  text: 範例辨識文字
+  category: coffee
+  recognized_at: 2026-06-15 22:10:52
+
+two:
+  text: 另一筆辨識文字
+  category: coffee
+  recognized_at: 2026-06-15 22:10:52
