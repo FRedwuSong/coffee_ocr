@@ -9,7 +9,7 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
-  resources :scans, only: %i[index show new create destroy] do
+  resources :scans, only: %i[index show new create edit update destroy] do
     collection do
       post :merge    # 手動把多筆 scan 合併為同一支豆
     end

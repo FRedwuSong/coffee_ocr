@@ -91,6 +91,36 @@ class CoffeeLabelParserTest < ActiveSupport::TestCase
     assert_equal ["Orange", "Peach", "Red Plum", "Milk Tea"], a[:flavor_notes]
   end
 
+  # 帶冒號標籤的英文格式（Region: / Roasted On: / Varietal: / process: / Note:），
+  # 末端還黏著日式地址與電話。
+  EN_PANAMA = "SWAMP Panama Nirvana Region: volcan Roasted On: 20260409 " \
+              "Varietal: Geisha process: Natural Anaerobic " \
+              "Note:plum, gold rum, American cherry, ripe, pineapple " \
+              "Tokyo Shinjuku Nishishinjuku 7-21-12 Renge-So105 0366832584".freeze
+
+  test "解析帶冒號標籤的英文格式（Region/Roasted On/Varietal/Note）" do
+    a = CoffeeLabelParser.parse(EN_PANAMA)
+
+    assert_equal "en", a[:language]
+    assert_equal "Panama", a[:origin_country]   # 沒有 Country 標籤，從內文辨識
+    assert_equal "Panama Nirvana", a[:product_name] # 商店名 SWAMP 切掉、保留產國
+    assert_equal "SWAMP", a[:manufacturer]      # 產國之前的商店名切成製造商
+    assert_equal "volcan", a[:region]           # 不會吃進 "Roasted On"
+    assert_equal "Geisha", a[:varietal]
+    assert_equal "Natural Anaerobic", a[:process] # 不會吃進 "Note"
+    assert_equal Date.new(2026, 4, 9), a[:manufactured_on]
+    assert_equal "20260409", a[:manufactured_on_raw]
+    assert_equal "0366832584", a[:phone]
+    assert_equal "Tokyo Shinjuku Nishishinjuku 7-21-12 Renge-So105", a[:manufacturer_address]
+    # 地址、電話都切掉後，風味乾淨
+    assert_equal ["plum", "gold rum", "American cherry", "ripe", "pineapple"], a[:flavor_notes]
+  end
+
+  test "parse_date 支援 YYYYMMDD 連寫" do
+    a = CoffeeLabelParser.parse("Colombia Roasted On: 20251231 Note: cocoa")
+    assert_equal Date.new(2025, 12, 31), a[:manufactured_on]
+  end
+
   test "空字串安全回傳預設值" do
     a = CoffeeLabelParser.parse("")
     assert_equal [], a[:flavor_notes]

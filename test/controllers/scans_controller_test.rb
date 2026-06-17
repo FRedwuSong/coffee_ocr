@@ -71,6 +71,30 @@ class ScansControllerTest < ActionDispatch::IntegrationTest
     assert_match "Caturra", response.body
   end
 
+  test "edit 正常顯示" do
+    scan = Scan.create!(text: EN_LABEL)
+    CoffeeProfile.create_for(scan)
+    get edit_scan_path(scan)
+    assert_response :success
+  end
+
+  test "update 改文字後重新解析欄位" do
+    scan = Scan.create!(text: EN_LABEL)
+    CoffeeProfile.create_for(scan)
+
+    patch scan_path(scan), params: { scan: { text: "Panama Geisha Varietal Geisha" } }
+    assert_redirected_to scan_path(scan)
+    assert_equal "Panama Geisha Varietal Geisha", scan.reload.text
+    assert_equal "Geisha", scan.coffee_profile.reload.varietal
+  end
+
+  test "update 文字空白時回 422" do
+    scan = Scan.create!(text: EN_LABEL)
+    CoffeeProfile.create_for(scan)
+    patch scan_path(scan), params: { scan: { text: "" } }
+    assert_response :unprocessable_entity
+  end
+
   test "destroy 刪掉 scan 後同步處理其豆" do
     scan = Scan.create!(text: EN_LABEL)
     CoffeeProfile.create_for(scan)

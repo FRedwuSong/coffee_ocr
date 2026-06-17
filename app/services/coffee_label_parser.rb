@@ -37,9 +37,21 @@ class CoffeeLabelParser
 
   # 英文結構標籤（切割界線用）
   EN_STRUCT = "Country|Process|Varietal|Region|Altitude".freeze
+  # 烘焙日期標籤：Roasted On / Roast Date / Roasted
+  EN_ROAST_DATE = "Roast(?:ed)?\\s*(?:On|Date)".freeze
+  # 英文欄位值的結束界線：結構標籤 + 帶冒號的新格式標籤（Roasted On / Note）
+  EN_VALUE_STOP = "#{EN_STRUCT}|#{EN_ROAST_DATE}|Note".freeze
   # 英文品名的結束界線：結構標籤 + 處理法/烘焙度（品名在這些之前）
-  EN_NAME_STOP = "#{EN_STRUCT}|Washed|Natural|Honey|Anaerobic|" \
+  EN_NAME_STOP = "#{EN_STRUCT}|#{EN_ROAST_DATE}|Note|Washed|Natural|Honey|Anaerobic|" \
                  "Light\\s*Roast|Medium\\s*Roast|Dark\\s*Roast".freeze
+
+  # 常見咖啡產國（新格式沒有 Country 標籤時，用來從品名/內文辨識產國）
+  COFFEE_ORIGINS = [
+    "Ethiopia", "Kenya", "Colombia", "Panama", "Guatemala", "Brazil",
+    "Costa Rica", "Honduras", "El Salvador", "Bolivia", "Peru", "Rwanda",
+    "Burundi", "Indonesia", "Yemen", "Tanzania", "Nicaragua", "Mexico",
+    "Ecuador", "Uganda", "China", "Taiwan", "India", "Vietnam"
+  ].freeze
 
   class << self
     # 回傳可直接 assign 給 CoffeeProfile 的屬性 Hash。
@@ -121,10 +133,18 @@ class CoffeeLabelParser
 
     # ---- 英文規格表（不依賴換行）----
     def parse_en(text, attrs)
-      attrs[:origin_country] = en_value(text, "Country")
+      attrs[:origin_country] = en_value(text, "Country") || detect_origin_country(text)
       attrs[:process]        = en_value(text, "Process")
       attrs[:varietal]       = en_value(text, "Varietal")
       attrs[:region]         = en_value(text, "Region")
+      # 結尾常見一串 9-11 碼電話（如日本市話 0366832584），抓進電話欄
+      attrs[:phone]          = clean_phone(text[/\b\d{9,11}\b/])
+
+      # 烘焙日期（Roasted On / Roast Date）→ 以製造日期欄保存（咖啡以烘焙日為基準日）
+      if (raw = en_value(text, EN_ROAST_DATE))
+        attrs[:manufactured_on_raw] = raw
+        attrs[:manufactured_on] = parse_date(raw)
+      end
 
       # 海拔用數字樣式擷取（容忍 "Altitude1500-1680m" 無空格的情形）
       tail = text
@@ -133,16 +153,52 @@ class CoffeeLabelParser
         tail = text[m.end(0)..].to_s   # 海拔之後通常就是風味描述
       end
 
-      attrs[:flavor_notes] = comma_list(tail)
-      attrs[:product_name] = en_product_name(text)
+      # 風味：優先取 Note: 標籤的逗號清單；沒有就沿用海拔之後的內容。
+      # Note 值末端常黏著電話與地址，先去掉電話、再切出地址，剩下才是風味。
+      note = en_value(text, "Note")&.sub(/\s*\b\d{9,11}\b\s*\z/, "")
+      address, note = split_address(note)
+      attrs[:manufacturer_address] = address if address
+      attrs[:flavor_notes] = comma_list(note || tail)
+
+      # 品名開頭若在產國之前還有字（商店／烘焙商名），切出來當製造商。
+      store, name = split_store(en_product_name(text), attrs[:origin_country])
+      attrs[:product_name] = name
+      attrs[:manufacturer] = store if store
       attrs[:net_weight] = text[/(\d+\s*g)\b/i, 1]&.delete(" ")
       attrs
+    end
+
+    # 從內文找出第一個已知咖啡產國（新格式沒有 Country 標籤時備援）。
+    def detect_origin_country(text)
+      COFFEE_ORIGINS.find { |c| text.match?(/\b#{Regexp.escape(c)}\b/i) }
+    end
+
+    # 品名以產國為界，把產國之前的字（如商店名 SWAMP）切成製造商。
+    # 回傳 [製造商, 品名]；產國缺漏或本來就在開頭時，品名原樣回傳、製造商為 nil。
+    def split_store(name, country)
+      return [nil, name] if name.blank? || country.blank?
+
+      idx = name =~ /\b#{Regexp.escape(country)}\b/i
+      return [nil, name] if idx.nil? || idx.zero?
+
+      [name[0...idx].strip.presence, name[idx..].strip]
+    end
+
+    # 從風味段尾端切出地址：以大寫地名開頭、含街廓號碼（如 7-21-12）延伸到結尾的一段。
+    # 回傳 [地址, 去除地址後的風味段]；沒有地址樣式時原樣回傳。
+    def split_address(segment)
+      return [nil, segment] if segment.blank?
+
+      m = segment.match(/\s+([A-Z][\w.-]*(?:\s+[\w.-]+)*\s+\d+-\d+[-\d]*(?:\s+[\w.-]+)*)\s*\z/)
+      return [nil, segment] unless m
+
+      [m[1].strip, segment[0...m.begin(0)].strip]
     end
 
     # 擷取英文「Label 值」，值非貪婪擷取至下一個結構標籤、換行或結尾。
     # 結構標籤以 lookahead 比對，可吃到無空格黏住的下一欄（例如 VarietalHelena）。
     def en_value(text, label)
-      re = /#{label}\s*[:：]?\s*(.+?)(?=\s*(?:#{EN_STRUCT})|[\r\n]|\z)/i
+      re = /#{label}\s*[:：]?\s*(.+?)(?=\s*(?:#{EN_VALUE_STOP})|[\r\n]|\z)/i
       m = text.match(re)
       m && m[1].strip.presence
     end
@@ -195,9 +251,11 @@ class CoffeeLabelParser
       value.tr("（）", "()").strip.presence
     end
 
-    # "2026/06/08" / "2026/6/8" → Date；解析失敗回傳 nil
+    # "2026/06/08" / "2026/6/8" / "20260409"(YYYYMMDD) → Date；解析失敗回傳 nil
     def parse_date(value)
-      m = value.to_s.match(%r{(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})})
+      s = value.to_s
+      m = s.match(%r{(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})}) ||
+          s.match(/\b(\d{4})(\d{2})(\d{2})\b/)
       return nil unless m
 
       Date.new(m[1].to_i, m[2].to_i, m[3].to_i)

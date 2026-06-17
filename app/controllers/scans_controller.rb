@@ -1,5 +1,5 @@
 class ScansController < ApplicationController
-  before_action :set_scan, only: %i[show destroy reparse unlink]
+  before_action :set_scan, only: %i[show edit update destroy reparse unlink]
 
   def index
     scans = Scan.recent
@@ -26,6 +26,19 @@ class ScansController < ApplicationController
 
   def new
     @scan = Scan.new
+  end
+
+  def edit
+  end
+
+  # 修正 OCR 文字後重新解析所屬的豆（文字是解析來源）。
+  def update
+    if @scan.update(scan_params)
+      @scan.coffee_profile&.rebuild!
+      redirect_to @scan, notice: "已更新並重新解析。"
+    else
+      render :edit, status: :unprocessable_entity
+    end
   end
 
   # 建立 Scan 後，先各自成為一支豆（之後可在畫面手動合併）。
