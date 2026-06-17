@@ -10,12 +10,11 @@
 #
 # It's strongly recommended that you check this file into your version control system.
 
-ActiveRecord::Schema[8.0].define(version: 2026_06_15_170053) do
+ActiveRecord::Schema[8.0].define(version: 2026_06_16_005125) do
   # These are extensions that must be enabled in order to support this database
   enable_extension "pg_catalog.plpgsql"
 
   create_table "coffee_profiles", force: :cascade do |t|
-    t.bigint "scan_id", null: false
     t.string "product_name"
     t.text "ingredients"
     t.string "net_weight"
@@ -40,9 +39,9 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_15_170053) do
     t.string "language"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.string "manufactured_on_raw"
     t.index ["origin_country"], name: "index_coffee_profiles_on_origin_country"
     t.index ["roast_level"], name: "index_coffee_profiles_on_roast_level"
-    t.index ["scan_id"], name: "index_coffee_profiles_on_scan_id", unique: true
   end
 
   create_table "scans", force: :cascade do |t|
@@ -51,8 +50,10 @@ ActiveRecord::Schema[8.0].define(version: 2026_06_15_170053) do
     t.datetime "recognized_at"
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
+    t.bigint "coffee_profile_id"
     t.index ["category"], name: "index_scans_on_category"
+    t.index ["coffee_profile_id"], name: "index_scans_on_coffee_profile_id"
   end
 
-  add_foreign_key "coffee_profiles", "scans"
+  add_foreign_key "scans", "coffee_profiles"
 end

@@ -1,6 +1,6 @@
 class Scan < ApplicationRecord
-  # 一筆 OCR 掃描的原始辨識文字。解析後的結構化咖啡標籤資料見 CoffeeProfile。
-  has_one :coffee_profile, dependent: :destroy
+  # 一筆 OCR 掃描的原始辨識文字。多筆 scan 可合併為一支豆（CoffeeProfile）。
+  belongs_to :coffee_profile, optional: true
 
   validates :text, presence: true
 
