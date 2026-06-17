@@ -1,0 +1,42 @@
+<% content_for :title, "原始試算表" %>
+
+<header class="page-head">
+  <p class="page-head__eyebrow">Raw Source · 即時讀取</p>
+  <h1>Google 試算表原始資料</h1>
+  <p>直接從來源試算表即時拉取的原始 OCR 列，未經解析與去重。豆的去重結果請看
+    <%= link_to "掃描列表", scans_path %>。</p>
+</header>
+
+<% if @fetch_error.present? %>
+  <div class="empty">
+    <strong>讀取試算表失敗</strong><br>
+    <%= @fetch_error %><br><br>
+    常見原因：試算表沒設成「知道連結的任何人可檢視」，或 spreadsheet_id 不正確。
+  </div>
+<% elsif @rows.blank? %>
+  <div class="empty">試算表目前沒有資料列。</div>
+<% else %>
+  <p class="merge-hint">共 <%= @rows.size %> 列（即時）</p>
+  <div class="raw-table-wrap">
+    <table class="raw-table">
+      <% if @header.any? %>
+        <thead>
+          <tr>
+            <th class="raw-table__num">#</th>
+            <% @header.each do |cell| %><th><%= cell %></th><% end %>
+          </tr>
+        </thead>
+      <% end %>
+      <tbody>
+        <% @rows.each_with_index do |row, i| %>
+          <tr>
+            <td class="raw-table__num"><%= i + 1 %></td>
+            <% @header.each_index do |col| %>
+              <td><%= row[col] %></td>
+            <% end %>
+          </tr>
+        <% end %>
+      </tbody>
+    </table>
+  </div>
+<% end %>
