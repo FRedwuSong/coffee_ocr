@@ -1,7 +1,7 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-Hant">
   <head>
-    <title><%= content_for(:title) || "Coffee Ocr" %></title>
+    <title><%= content_for(:title) || "Lofé" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="mobile-web-app-capable" content="yes">
@@ -10,19 +10,51 @@
 
     <%= yield :head %>
 
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
-    <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,500;0,9..144,600;0,9..144,900;1,9..144,400&family=JetBrains+Mono:wght@400;500;700&family=Noto+Serif+TC:wght@400;500;700;900&display=swap" rel="stylesheet">
+
+    <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
-    <%= yield %>
+    <header class="site-header">
+      <a href="/" class="brand">
+        <span class="brand__mark">L</span>
+        <span class="brand__name">
+          <span class="brand__lab">Lofé</span>
+        </span>
+      </a>
+      <nav class="site-nav">
+        <%= link_to "掃描列表", scans_path, class: "site-nav__link" %>
+        <%= link_to "原始試算表", raw_scans_path, class: "site-nav__link" %>
+        <%= link_to "＋ 新增掃描", new_scan_path, class: "site-nav__link site-nav__link--cta" %>
+      </nav>
+    </header>
+
+    <% if flash.any? %>
+      <div class="flash-stack">
+        <% flash.each do |type, message| %>
+          <div class="flash flash--<%= type %>">
+            <span class="flash__dot"></span><%= message %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+
+    <main class="shell">
+      <%= yield %>
+    </main>
+
+    <footer class="site-footer">
+      <span>COFFEE OCR</span>
+      <span>掃描 · 解析 · 合併</span>
+      <span>Tesseract.js → Rails</span>
+    </footer>
   </body>
 </html>

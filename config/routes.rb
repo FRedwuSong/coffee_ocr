@@ -9,6 +9,19 @@ Rails.application.routes.draw do
   # get "manifest" => "rails/pwa#manifest", as: :pwa_manifest
   # get "service-worker" => "rails/pwa#service_worker", as: :pwa_service_worker
 
+  resources :scans, only: %i[index show new create destroy] do
+    collection do
+      post :merge    # 手動把多筆 scan 合併為同一支豆
+    end
+    member do
+      post :reparse  # 重新依 OCR 文字解析
+      post :unlink   # 從目前的豆拆出，獨立成一筆
+    end
+  end
+
+  # 即時從 Google 試算表顯示原始 OCR 資料
+  get "raw" => "spreadsheet#index", as: :raw_scans
+
   # Defines the root path route ("/")
-  # root "posts#index"
+  root "scans#index"
 end
