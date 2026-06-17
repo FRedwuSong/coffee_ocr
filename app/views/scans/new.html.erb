@@ -1,0 +1,9 @@
+<% content_for :title, "新增掃描" %>
+
+<header class="page-head">
+  <p class="page-head__eyebrow">New Scan</p>
+  <h1>新增掃描</h1>
+  <p>貼上 OCR 辨識後的文字（中文背標或英文規格表皆可）。系統會自動解析並先各自成一支豆。</p>
+</header>
+
+<%= render "form", scan: @scan %>

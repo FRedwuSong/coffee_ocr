@@ -1,0 +1,28 @@
+<%= form_with model: scan, class: "form-card" do |f| %>
+  <% if scan.errors.any? %>
+    <div class="errors">
+      <h2><%= pluralize(scan.errors.count, "個") %>錯誤</h2>
+      <ul>
+        <% scan.errors.full_messages.each do |msg| %>
+          <li><%= msg %></li>
+        <% end %>
+      </ul>
+    </div>
+  <% end %>
+
+  <div class="form-row">
+    <%= f.label :text, "OCR 辨識文字" %>
+    <%= f.text_area :text, rows: 12,
+          placeholder: "貼上 OCR 辨識後的文字…" %>
+  </div>
+
+  <div class="form-row">
+    <%= f.label :category, "分類 / 歸戶（選填）" %>
+    <%= f.text_field :category %>
+  </div>
+
+  <div class="btn-row">
+    <%= f.submit "建立並解析", class: "btn btn--accent" %>
+    <%= link_to "← 返回列表", scans_path, class: "btn btn--ghost" %>
+  </div>
+<% end %>

@@ -1,0 +1,99 @@
+<% content_for :title, "掃描詳情" %>
+<% p = @profile %>
+
+<header class="page-head">
+  <p class="page-head__eyebrow">
+    Scan #<%= @scan.id %> ·
+    <%= @scan.recognized_at&.strftime("%Y-%m-%d %H:%M:%S") %> ·
+    豆 #<%= @scan.coffee_profile_id %>
+  </p>
+  <h1>標籤規格</h1>
+</header>
+
+<% if p %>
+  <section class="spec">
+    <p class="page-head__eyebrow"><%= p.origin_country.presence || "Origin Unknown" %></p>
+    <h2 class="spec__origin"><%= p.product_name.presence || "未命名咖啡" %></h2>
+    <p class="spec__name"><%= pangu([p.manufacturer, p.origin].compact_blank.join(" · ")) %></p>
+
+    <div class="spec__tags">
+      <% if p.manufactured_on.present? || p.manufactured_on_raw.present? %><span class="chip"><%= p.manufactured_on&.iso8601 || p.manufactured_on_raw %></span><% end %>
+      <% if p.manufacturer.present? %><span class="chip"><%= pangu(p.manufacturer) %></span><% end %>
+    </div>
+
+    <div class="spec-grid">
+      <% {
+           "Country / 產國" => p.origin_country,
+           "Process / 處理法" => p.process,
+           "Varietal / 品種" => p.varietal,
+           "Region / 產區" => p.region,
+           "Altitude / 海拔" => p.altitude,
+           "Net Weight / 淨重" => p.net_weight,
+           "成份" => p.ingredients,
+           "製造商" => p.manufacturer,
+           "地址" => p.manufacturer_address,
+           "電話" => p.phone,
+           "官網" => p.website,
+           "製造地" => p.origin,
+         }.each do |key, val| %>
+        <% next if val.blank? %>
+        <div class="spec-grid__cell">
+          <span class="spec-key"><%= key %></span>
+          <span class="spec-val spec-val--mono"><%= pangu(val) %></span>
+        </div>
+      <% end %>
+    </div>
+
+    <% if p.flavor_notes.any? %>
+      <p class="section-title">Flavor Notes / 風味</p>
+      <div class="flavors">
+        <% p.flavor_notes.each do |note| %><span class="flavor"><%= pangu(note) %></span><% end %>
+      </div>
+    <% end %>
+
+    <% if p.manufactured_on_raw.present? || p.expires_on.present? %>
+      <div class="datebox">
+        <% if p.manufactured_on_raw.present? %>
+          <div class="datebox__item">
+            <div class="datebox__k">製造日期 · Manufactured</div>
+            <div class="datebox__raw"><%= p.manufactured_on_raw %></div>
+            <% if p.manufactured_on %><div class="datebox__parsed">↳ <%= p.manufactured_on.iso8601 %></div><% end %>
+          </div>
+        <% end %>
+        <% if p.expires_on.present? %>
+          <div class="datebox__item">
+            <div class="datebox__k">保存期限 · Best Before</div>
+            <div class="datebox__raw"><%= p.expires_on.strftime("%Y/%m/%d") %></div>
+            <% if p.manufactured_on %>
+              <div class="datebox__parsed">↳ 保存 <%= (p.expires_on - p.manufactured_on).to_i %> 天</div>
+            <% end %>
+          </div>
+        <% end %>
+      </div>
+    <% end %>
+  </section>
+<% else %>
+  <div class="empty">（尚無解析結果）</div>
+<% end %>
+
+<% if @siblings.any? %>
+  <p class="section-title">同一支豆的其他掃描</p>
+  <ul class="siblings">
+    <% @siblings.each do |s| %>
+      <li><%= link_to "#{s.recognized_at&.strftime('%m-%d %H:%M')} · #{truncate(s.text, length: 48)}", s %></li>
+    <% end %>
+  </ul>
+<% end %>
+
+<p class="section-title">原始辨識文字</p>
+<pre class="raw-text"><%= @scan.text %></pre>
+
+<div class="btn-row" style="margin-top: 1.6rem">
+  <%= button_to "↻ 重新解析", reparse_scan_path(@scan), method: :post, class: "btn btn--ghost" %>
+  <% if @siblings.any? %>
+    <%= button_to "⤴ 從此支豆拆出", unlink_scan_path(@scan), method: :post, class: "btn btn--ghost" %>
+  <% end %>
+  <%= link_to "← 返回列表", scans_path, class: "btn btn--ghost" %>
+  <%= button_to "刪除", @scan, method: :delete, class: "btn btn--danger",
+        data: { turbo_confirm: "確定刪除這筆掃描？" } %>
+</div>

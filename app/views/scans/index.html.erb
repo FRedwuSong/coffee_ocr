@@ -1,0 +1,63 @@
+<% content_for :title, "掃描列表" %>
+
+<header class="page-head">
+  <p class="page-head__eyebrow">Scan Library</p>
+  <h1>咖啡標籤掃描</h1>
+  <p>每筆 OCR 掃描先各自成一支豆。勾選屬於同一支豆的多筆掃描（例如背面中文 + 正面英文），按下合併即可湊成一筆完整資料。</p>
+</header>
+
+<%= form_with url: scans_path, method: :get, class: "toolbar" do |f| %>
+  <%= f.text_field :q, value: params[:q], placeholder: "搜尋辨識文字…" %>
+  <%= f.select :category,
+        options_for_select(@categories, params[:category]),
+        { include_blank: "全部分類" } %>
+  <%= f.submit "篩選", class: "btn btn--ghost" %>
+<% end %>
+
+<% if @beans.any? %>
+  <%= form_with url: merge_scans_path, method: :post, class: "merge-form",
+        data: { turbo_confirm: "把勾選的豆合併為同一支？" } do %>
+    <p class="merge-hint">↓ 一列＝一支豆；勾選兩支以上可合併</p>
+
+    <div class="scan-list">
+      <% @beans.each_with_index do |scans, i| %>
+        <% rep = scans.first %>
+        <% p = rep.coffee_profile %>
+        <article class="scan-row" style="animation-delay: <%= i * 45 %>ms">
+          <label class="scan-row__check">
+            <%= check_box_tag "scan_ids[]", scans.map(&:id).join(","), false %>
+          </label>
+
+          <div>
+            <div class="scan-row__meta">
+              <% if p&.origin_country.present? %>
+                <span class="chip chip--country"><%= p.origin_country %></span>
+              <% end %>
+              <% if p&.process.present? %>
+                <span class="chip"><%= p.process %></span>
+              <% end %>
+              <% if (left = p&.tasting_days_left) %>
+                <span class="chip chip--taste<%= " chip--taste-over" if left.negative? %>">
+                  <%= left.positive? ? "還剩 #{left} 天可以開封" : left.zero? ? "今天可以開封" : "已過 #{-left} 天" %>
+                </span>
+              <% end %>
+            </div>
+            <div class="scan-row__title"><%= p&.product_name.presence || "（未命名）" %></div>
+            <div class="scan-row__excerpt"><%= truncate(rep.text, length: 72) %></div>
+          </div>
+
+          <%= link_to "檢視 →", rep, class: "scan-row__link" %>
+        </article>
+      <% end %>
+    </div>
+
+    <div class="merge-bar">
+      <p>選取兩支以上 → 合併為一支豆</p>
+      <%= submit_tag "合併勾選的豆", class: "btn btn--accent" %>
+    </div>
+  <% end %>
+<% else %>
+  <div class="empty">
+    尚無掃描資料。<br><%= link_to "＋ 新增第一筆掃描", new_scan_path, class: "scan-row__link" %>
+  </div>
+<% end %>
