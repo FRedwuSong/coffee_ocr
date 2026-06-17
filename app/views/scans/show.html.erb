@@ -55,7 +55,7 @@
       <div class="datebox">
         <% if p.manufactured_on_raw.present? %>
           <div class="datebox__item">
-            <div class="datebox__k">製造日期 · Manufactured</div>
+            <div class="datebox__k">製造／烘焙日 · Manufactured / Roasted</div>
             <div class="datebox__raw"><%= p.manufactured_on_raw %></div>
             <% if p.manufactured_on %><div class="datebox__parsed">↳ <%= p.manufactured_on.iso8601 %></div><% end %>
           </div>
@@ -93,6 +93,7 @@
   <% if @siblings.any? %>
     <%= button_to "⤴ 從此支豆拆出", unlink_scan_path(@scan), method: :post, class: "btn btn--ghost" %>
   <% end %>
+  <%= link_to "✎ 編輯文字", edit_scan_path(@scan), class: "btn btn--ghost" %>
   <%= link_to "← 返回列表", scans_path, class: "btn btn--ghost" %>
   <%= button_to "刪除", @scan, method: :delete, class: "btn btn--danger",
         data: { turbo_confirm: "確定刪除這筆掃描？" } %>

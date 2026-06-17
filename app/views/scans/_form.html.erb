@@ -22,7 +22,7 @@
   </div>
 
   <div class="btn-row">
-    <%= f.submit "建立並解析", class: "btn btn--accent" %>
-    <%= link_to "← 返回列表", scans_path, class: "btn btn--ghost" %>
+    <%= f.submit(scan.persisted? ? "儲存並重新解析" : "建立並解析", class: "btn btn--accent") %>
+    <%= link_to "← 返回", (scan.persisted? ? scan : scans_path), class: "btn btn--ghost" %>
   </div>
 <% end %>

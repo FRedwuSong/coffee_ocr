@@ -1,0 +1,9 @@
+<% content_for :title, "編輯掃描" %>
+
+<header class="page-head">
+  <p class="page-head__eyebrow">Edit Scan #<%= @scan.id %></p>
+  <h1>編輯掃描</h1>
+  <p>修正 OCR 辨識文字後，系統會重新解析這支豆的欄位。</p>
+</header>
+
+<%= render "form", scan: @scan %>
