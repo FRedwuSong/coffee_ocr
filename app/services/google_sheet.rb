@@ -7,11 +7,10 @@ require "uri"
 # 試算表需設為「知道連結的任何人可檢視」，這樣就能直接抓公開的 CSV 匯出，
 # 不需要任何金鑰或 API 設定。
 #
-# 可用環境變數覆寫：
-#   GOOGLE_SPREADSHEET_ID  試算表 ID（預設為 coffee_ocr 那張）
+# 需設定的環境變數：
+#   GOOGLE_SPREADSHEET_ID  試算表 ID（必填）
 #   GOOGLE_SHEET_GID       指定工作表分頁的 gid（選填）
 class GoogleSheet
-  DEFAULT_SPREADSHEET_ID = "1PjeAehn5nPYXDwbPfhXJDVubveOeqann4XUZ4sRclVc".freeze
   MAX_REDIRECTS = 5
 
   # 抓取失敗（權限未開、ID 錯誤、回傳登入頁等）時丟這個，讓 controller 顯示指引。
@@ -65,6 +64,7 @@ class GoogleSheet
   end
 
   def spreadsheet_id
-    ENV["GOOGLE_SPREADSHEET_ID"].presence || DEFAULT_SPREADSHEET_ID
+    ENV["GOOGLE_SPREADSHEET_ID"].presence ||
+      raise(FetchError, "尚未設定 GOOGLE_SPREADSHEET_ID 環境變數。")
   end
 end
